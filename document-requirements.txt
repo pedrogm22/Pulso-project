@@ -1,0 +1,15 @@
+NOME DO SOFTWARE
+
+-Tabs para todas as músicas (podemos começar com as top100 músicas mais tocadas)-Separação por gênero musical-Metrônomo
+-Orientações e observações durante a música
+-Seção de comentários
+-Disponibilidade de soundtrack
+-Possibilidade de retirar instrumentos do soundtrack
+-Letra das músicas e a tradução delas
+-Aulas em vídeo ensinando o básico da bateria
+-Disponibilidade de partitura
+
+Monetização-Assinatura mensal para acesso total. 
+
+Finalidade
+-Democratizar o ensino da bateria e auxiliar músicos 

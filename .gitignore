@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.pgdata_tools/
+.tmp/
+out/
+coverage/
+*.tsbuildinfo
+.env*
+!.env.example
+src/generated/
+public/audio/*.wav
+public/audio/*.mp3
+/black-sabbath-paranoid.mp3
+/michael-jackson-billie-jean.mp3
+/the-white-stripes-seven-nation-army.mp3
+*.log
+.DS_Store

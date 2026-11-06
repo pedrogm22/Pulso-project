@@ -1,0 +1,365 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum TabStatus {
+  DRAFT
+  PUBLISHED
+  VERIFIED
+  ARCHIVED
+}
+
+enum NotationType {
+  DRUM_TAB
+  STANDARD
+}
+
+enum Instrument {
+  KICK
+  SNARE
+  HI_HAT
+  OPEN_HI_HAT
+  FOOT_HI_HAT
+  CRASH
+  RIDE
+  TOM_HIGH
+  TOM_MID
+  FLOOR_TOM
+  CHINA
+  SPLASH
+}
+
+enum Articulation {
+  NORMAL
+  GHOST
+  RIMSHOT
+  CROSS_STICK
+  ACCENT
+  BELL
+  FLAM
+}
+
+enum AudioTrackType {
+  ORIGINAL
+  DRUMLESS
+  CLICK
+  BACKING
+  STEM
+}
+
+enum StemType {
+  VOCALS
+  GUITAR
+  BASS
+  DRUMS
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  emailVerified Boolean @default(false)
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tabs      Tab[]
+  favorites Favorite[]
+  sessions  PracticeSession[]
+  authSessions Session[]
+  accounts Account[]
+  comments Comment[]
+  billing BillingSubscription?
+}
+
+model Artist {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  songs     Song[]
+}
+
+model Song {
+  id                       String     @id @default(cuid())
+  title                    String
+  slug                     String
+  artistId                 String
+  artist                   Artist     @relation(fields: [artistId], references: [id], onDelete: Restrict)
+  duration                 Float?
+  bpm                      Float?
+  timeSignatureNumerator   Int        @default(4)
+  timeSignatureDenominator Int        @default(4)
+  difficulty               Difficulty
+  genre                    String     @default("Rock")
+  coverImage               String?
+  releaseYear              Int?
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+  tabs                     Tab[]
+  audioTracks              AudioTrack[]
+  favorites                Favorite[]
+  sessions                 PracticeSession[]
+  comments                 Comment[]
+  lyrics                   LyricLine[]
+  dailyPlays               DailySongPlay[]
+
+  @@unique([artistId, slug])
+  @@index([title])
+}
+
+model DailySongPlay {
+  id        String   @id @default(cuid())
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  day       DateTime @db.Date
+  plays     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([songId, day])
+  @@index([day, plays])
+}
+
+model Tab {
+  id           String       @id @default(cuid())
+  songId       String
+  song         Song         @relation(fields: [songId], references: [id], onDelete: Cascade)
+  title        String
+  version      Int          @default(1)
+  difficulty   Difficulty
+  notationType NotationType @default(DRUM_TAB)
+  authorId     String?
+  author       User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  status       TabStatus    @default(DRAFT)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sections     Section[]
+  measures     Measure[]
+  sessions     PracticeSession[]
+
+  @@unique([songId, version])
+  @@unique([id, songId])
+  @@index([authorId])
+}
+
+model Section {
+  id        String    @id @default(cuid())
+  tabId     String
+  tab       Tab       @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  name      String
+  guidance  String?
+  lyricCue  String?
+  order     Int
+  startTime Float
+  endTime   Float
+  measures  Measure[]
+
+  @@unique([tabId, order])
+  @@unique([id, tabId])
+}
+
+model LyricLine {
+  id String @id @default(cuid())
+  songId String
+  song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+  startTime Float
+  endTime Float
+  text String
+  translation String
+  language String @default("en")
+  translationLanguage String @default("pt-BR")
+  license String
+  source String
+  @@index([songId, startTime])
+}
+
+model Lesson {
+  id String @id
+  slug String @unique
+  title String
+  description String
+  order Int @unique
+  duration Int
+  videoUrl String
+  captionsUrl String
+  transcript String
+  license String
+}
+
+model SiteContent {
+  id         String   @id @default("main")
+  topMessage String   @db.VarChar(500)
+  blogPosts  Json
+  updatedAt  DateTime @updatedAt
+}
+
+model Comment {
+  id String @id @default(cuid())
+  songId String
+  song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body String
+  createdAt DateTime @default(now())
+  @@index([songId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Session {
+  id String @id
+  expiresAt DateTime
+  token String @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model Account {
+  id String @id
+  accountId String
+  providerId String
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken String?
+  refreshToken String?
+  idToken String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope String?
+  password String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id String @id
+  identifier String
+  value String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([identifier])
+}
+
+model RateLimit {
+  id String @id @default(cuid())
+  key String @unique
+  count Int
+  lastRequest BigInt
+}
+
+model BillingSubscription {
+  id String @id @default(cuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerId String @unique
+  subscriptionId String? @unique
+  status String @default("inactive")
+  currentPeriodEnd DateTime?
+  updatedAt DateTime @updatedAt
+}
+
+model BillingEvent {
+  id String @id
+  createdAt DateTime @default(now())
+}
+
+model Measure {
+  id          String      @id @default(cuid())
+  tabId       String
+  tab         Tab         @relation(fields: [tabId], references: [id], onDelete: Cascade)
+  sectionId   String
+  section     Section     @relation(fields: [sectionId, tabId], references: [id, tabId], onDelete: Cascade)
+  order       Int
+  globalOrder Int
+  startTime   Float
+  endTime     Float
+  numerator   Int
+  denominator Int
+  beatTimes   Float[]    @default([])
+  events      DrumEvent[]
+
+  @@unique([sectionId, order])
+  @@unique([tabId, globalOrder])
+}
+
+model DrumEvent {
+  id           String       @id @default(cuid())
+  measureId    String
+  measure      Measure      @relation(fields: [measureId], references: [id], onDelete: Cascade)
+  instrument   Instrument
+  beat         Int
+  subdivision  Float        @default(0)
+  velocity     Int          @default(100)
+  articulation Articulation @default(NORMAL)
+  sourceSymbol String?
+
+  @@index([measureId])
+}
+
+model AudioTrack {
+  id          String         @id @default(cuid())
+  songId      String
+  song        Song           @relation(fields: [songId], references: [id], onDelete: Cascade)
+  title       String
+  type        AudioTrackType
+  stem        StemType?
+  url         String
+  duration    Float
+  offset      Float          @default(0)
+  license     String
+  source      String
+  attribution String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([songId])
+}
+
+model Favorite {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, songId])
+  @@index([songId])
+}
+
+model PracticeSession {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  songId              String
+  song                Song      @relation(fields: [songId], references: [id], onDelete: Restrict)
+  tabId               String
+  tab                 Tab       @relation(fields: [tabId, songId], references: [id, songId], onDelete: Restrict)
+  startedAt           DateTime  @default(now())
+  endedAt             DateTime?
+  duration            Float     @default(0)
+  averagePlaybackRate Float     @default(1)
+
+  @@index([userId, startedAt])
+  @@index([tabId, songId])
+  @@index([songId])
+}
